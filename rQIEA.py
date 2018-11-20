@@ -1,8 +1,3 @@
-#!/usr/bin/python
-#
-# Algorithm QEA from www.ijesi.org Volume 3 Issue 8 
-#
-
 import sys
 import math
 import numpy as np
@@ -36,14 +31,13 @@ def f(x):
     #first fit to calculate number of bins to be used for packing
     bins_space=[]
     bins=0;
-		
+        
     for i in range(len(x)):
         bins_space.append(8);
-		
-		
+        
+    print("Permutation of item sizes "+str(x))  
     for i in range(len(x)):
         st=-1
-        print(x[i])
         for j in range(bins):
             if bins_space[j] >= x[i] :
                 bins_space[j] -= x[i];
@@ -118,36 +112,70 @@ class rQIEA(EA):
                 np.matrix(self.Q[q2], copy=False)[:,h1:h2] = temp
 
     def generation(self):
+        print("Generation "+str(self.t))
         for i in range(self.popsize):
+            l=set()
             for j in range(self.dim):
                 a=-1
                 index=-1
                 for k in range(8):
-                    if self.Q[i][k][j]>a:
+                    if self.Q[i][k][j]>a and (k not in l):
                         a=self.Q[i][k][j]
                         index=k
                 self.P[i,j]=index+1
+                l.add(index)
+                #print (str(index)+" index value")
                 #print(self.Q[i][k][j])
                 #print(k)
-
         # Evaluate P(t) entire generation is in P(t)
         fvalues = self.evaluation()
-        print(fvalues)
+        print("Number of bins used for each Chromosome in Population of this Generation- "+str(fvalues))
         # Select the best solution and store it into b(t)
         self.best = min(fvalues) # minmax XXX
         self.bestq = copy.deepcopy(self.Q[fvalues.index(self.best)])
         #self.recombination()
-        #self.crossover()
-        #self.mutation()
+        for i in range(self.popsize):
+            self.crossover(i) 
+        for i in range(self.popsize):
+            self.mutation(i)
+        
+
+    def mutation(self,c_i):
+        index = math.ceil(self.dim - 1) * random.random()
+        b = math.ceil(math.log(self.dim, 2))
+        i = 1
+        k = math.ceil(math.log(self.dim, 2))
+        while i < k * 2 + 1:
+            temp = np.zeros([8, 8])
+            for j in range(8):
+                temp[1][j]  = self.Q[c_i][1][j]
+                temp[2][j] = self.Q[c_i][2][j]
+                self.Q[c_i][1][j] = self.Q[c_i][i][j]
+                self.Q[c_i][2][j] = self.Q[c_i][i+1][j]
+                self.Q[c_i][i][j] = temp[1][ j]
+                self.Q[c_i][i+1][j] = temp[2][j]
+            i = i + 2
+
+    def crossover(self,c_i):
+        i = 1
+        k = math.log(self.dim, 2)
+        #while i < k * 2 + 1:
+        temp = np.zeros([8, 8])
+        index = math.floor(self.popsize * random.random())
+        point = math.floor(self.popsize * random.random())
+        temp = self.Q[index].copy()
+        self.Q[index] = self.Q[point].copy()
+        self.Q[point]=temp.copy()
+            #i = i + 2
 
 
 if __name__ == '__main__':
     rqiea = rQIEA()
     # set parameters
-    rqiea.popsize = 1
+    rqiea.popsize = 10
     rqiea.dim = 8
     rqiea.tmax = (10000 / rqiea.popsize)
-    rqiea.tmax=1
+    rqiea.tmax=10
     rqiea.fitness_function = f
     rqiea.run()
-    print (rqiea.best)
+    print ("Number of bins for best permutation- "+str(rqiea.best))
